@@ -1,0 +1,26 @@
+# Конфиденциальные данные
+config.php
+.env
+*.log
+
+# Системные файлы
+.DS_Store
+Thumbs.db
+
+# Папки IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Временные файлы
+*.tmp
+*.temp
+*.swp
+*~
+
+# Зависимости и сборки
+/vendor/
+/node_modules/
+/dist/
+/build/ 

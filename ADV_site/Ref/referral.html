@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Реферальная система</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            padding: 5px 10px;
+            border-radius: 50%;
+            background: red;
+            color: white;
+        }
+        .referral-card {
+            transition: transform 0.2s;
+        }
+        .referral-card:hover {
+            transform: translateY(-5px);
+        }
+        .level-progress {
+            height: 25px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h1>Реферальная система</h1>
+            </div>
+            <div class="col-md-6 text-end">
+                <button id="notificationsBtn" class="btn btn-primary position-relative">
+                    Уведомления
+                    <span id="notificationBadge" class="notification-badge d-none">0</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Статистика -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card referral-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Ваш уровень</h5>
+                        <h2 id="currentLevel">-</h2>
+                        <div class="progress level-progress">
+                            <div id="levelProgress" class="progress-bar" role="progressbar"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card referral-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Рефералы</h5>
+                        <h2 id="totalReferrals">0</h2>
+                        <p>Всего приглашено</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card referral-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Заработано</h5>
+                        <h2 id="totalEarned">0</h2>
+                        <p>Монет получено</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Реферальная ссылка -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Ваша реферальная ссылка</h5>
+                <div class="input-group">
+                    <input type="text" id="referralLink" class="form-control" readonly>
+                    <button class="btn btn-primary" onclick="copyReferralLink()">Копировать</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- История рефералов -->
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">История рефералов</h5>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Пользователь</th>
+                                <th>Дата</th>
+                                <th>Награда</th>
+                            </tr>
+                        </thead>
+                        <tbody id="referralHistory"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно уведомлений -->
+    <div class="modal fade" id="notificationsModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Уведомления</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="notificationsList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Конфигурация
+        const API_URL = 'api.php';
+        let userId = '123'; // Здесь должен быть реальный ID пользователя
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStatistics();
+            loadNotifications();
+            
+            // Обработчик кнопки уведомлений
+            document.getElementById('notificationsBtn').addEventListener('click', showNotifications);
+        });
+
+        // Загрузка статистики
+        async function loadStatistics() {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `action=get_detailed_stats&user_id=${userId}`
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateStatistics(data.data);
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки статистики:', error);
+            }
+        }
+
+        // Обновление статистики на странице
+        function updateStatistics(data) {
+            document.getElementById('currentLevel').textContent = data.current_level.name;
+            document.getElementById('totalReferrals').textContent = data.user_stats.total_referrals;
+            document.getElementById('totalEarned').textContent = data.user_stats.total_earned_currency;
+            
+            // Обновление прогресса уровня
+            const progressBar = document.getElementById('levelProgress');
+            const progress = (data.user_stats.total_referrals / data.current_level.min_referrals) * 100;
+            progressBar.style.width = `${Math.min(progress, 100)}%`;
+            progressBar.setAttribute('aria-valuenow', progress);
+            
+            // Обновление истории рефералов
+            const historyTable = document.getElementById('referralHistory');
+            historyTable.innerHTML = data.rewards_history.map(reward => `
+                <tr>
+                    <td>${reward.description}</td>
+                    <td>${new Date(reward.created_at).toLocaleDateString()}</td>
+                    <td>${reward.amount}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Загрузка уведомлений
+        async function loadNotifications() {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `action=get_notifications&user_id=${userId}`
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateNotificationBadge(data.notifications.filter(n => !n.is_read).length);
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки уведомлений:', error);
+            }
+        }
+
+        // Обновление бейджа уведомлений
+        function updateNotificationBadge(count) {
+            const badge = document.getElementById('notificationBadge');
+            if (count > 0) {
+                badge.textContent = count;
+                badge.classList.remove('d-none');
+            } else {
+                badge.classList.add('d-none');
+            }
+        }
+
+        // Показ модального окна с уведомлениями
+        async function showNotifications() {
+            const modal = new bootstrap.Modal(document.getElementById('notificationsModal'));
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `action=get_notifications&user_id=${userId}`
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('notificationsList').innerHTML = data.notifications
+                        .map(n => `
+                            <div class="alert alert-${n.is_read ? 'secondary' : 'primary'}">
+                                ${n.message}
+                                <small class="d-block text-muted">
+                                    ${new Date(n.created_at).toLocaleString()}
+                                </small>
+                            </div>
+                        `)
+                        .join('');
+                    
+                    modal.show();
+                    
+                    // Отмечаем уведомления как прочитанные
+                    await fetch(API_URL, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: `action=mark_notifications_read&user_id=${userId}`
+                    });
+                    
+                    updateNotificationBadge(0);
+                }
+            } catch (error) {
+                console.error('Ошибка при работе с уведомлениями:', error);
+            }
+        }
+
+        // Копирование реферальной ссылки
+        function copyReferralLink() {
+            const linkInput = document.getElementById('referralLink');
+            linkInput.select();
+            document.execCommand('copy');
+            
+            // Показываем уведомление о копировании
+            const button = linkInput.nextElementSibling;
+            const originalText = button.textContent;
+            button.textContent = 'Скопировано!';
+            setTimeout(() => button.textContent = originalText, 2000);
+        }
+    </script>
+</body>
+</html> 
