@@ -892,26 +892,6 @@ footer:hover .smoke-3 {
     color: #7289DA;
 }
 
-.social-links a.telegram:hover {
-    color: #0088cc;
-}
-
-.social-links a.telegram img {
-    transition: all 0.3s ease;
-}
-
-.vk:hover svg {
-    color: #4C75A3;
-}
-
-.telegram:hover svg {
-    color: #0088cc;
-}
-
-.discord:hover svg {
-    color: #7289DA;
-}
-
 /* Responsive design */
 @media (max-width: 768px) {
     .hero h1 {
@@ -1598,4 +1578,47 @@ html {
 
 .wiki-link:hover::after {
     width: 100%;
+}
+
+.survival-gallery {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    padding: 20px;
+    margin-top: 30px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 10px;
+    width: 100%;
+}
+
+.survival-gallery img {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    transition: transform 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    object-fit: cover;
+}
+
+.survival-gallery img:hover {
+    transform: scale(1.02);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+.survival-gallery-container {
+    margin: 40px 0;
+    padding: 0;
+    width: 100%;
+}
+
+.survival-gallery-title {
+    color: var(--primary-color);
+    font-size: 32px;
+    margin-bottom: 30px;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(255, 50, 50, 0.3);
 } 
